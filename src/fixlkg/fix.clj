@@ -1,6 +1,6 @@
 (ns fixlkg.fix
   (:gen-class)
-  (:use [clojure.java.io :only [copy input-stream output-stream]]
+  (:use [clojure.java.io :only [copy resource input-stream output-stream]]
         [clojure.tools.cli :only [cli]])
   (:import (java.io
               File
@@ -85,7 +85,7 @@
       (.write (.getBytes "image/jpeg\0"))
       (.write 3)
       (.write 0))
-    (with-open [in (input-stream pic)]
+    (with-open [in (if pic (input-stream pic) (input-stream (resource "rc/lkg.jpg")))]
       (copy in bout))
     {:id "APIC"
      :size (.size bout)
@@ -131,7 +131,8 @@
           ["-o" "--out-dir" "Write converted mp3s to this directory"])
         usage (clojure.string/replace-first usage "Usage:"
                 "\nUsage: fixlkg [options] <source mp3 directory>")
-        out-dir (if-let [out (:out-dir opts)] (File. out) (File. (:album opts)))]
+        out-dir (cond (:out-dir opts) (File. (:out-dir opts))
+                      (:album opts) (File. (:album opts)))]
     (when (empty? params)
       (println "ERROR: source mp3 location not specified\n" usage)
       (System/exit 1))
@@ -159,10 +160,8 @@
           frames [(make-text-frame "TALB" (:album opts))
                   (make-text-frame "TIT2" mp3-name)
                   (make-text-frame "TPE1" "Randall Buth")
-                  (make-text-frame "TCON" "Greek Language")]
-          frames (if-let [pic (:pic opts)]
-                    (conj frames (make-apic-frame pic))
-                    (frames))
+                  (make-text-frame "TCON" "Greek Language")
+                  (make-apic-frame (:pic opts))]
           converted-mp3 (File. (:dest opts) (str mp3-name ".mp3"))]
       (id3-encode converted-mp3 frames)
       (with-open [ins (input-stream mp3)
