@@ -1,5 +1,4 @@
 /pom.xml
-*jar
 /lib
 /classes
 /native
@@ -8,3 +7,5 @@
 /.lein-deps-sum
 .idea/
 *.iml
+*.jar
+*.exe
